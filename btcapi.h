@@ -23,7 +23,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <wchar.h>
 
 typedef struct {
 	bool err;
@@ -32,19 +31,19 @@ typedef struct {
 
 typedef struct {
 	char name[3 + 1];
-	wchar_t sign[3 + 1];
+	char sign[8];  // a somewhat arbitrary size as utf-8 characters can fill more than one char
 	uint32_t sf;
 } currcy_t;
 
 // struct containing current exchange information
 
 typedef struct {
-	int32_t buy;		// buy value as an integer (more precise)
+	uint32_t buy;		// buy value as an integer (more precise)
 	double buyf;		// buy value as a double-precision float
 	currcy_t currcy;	// structure containing currency information
 	bool got;		// obtained?
 	bool result;		// result of the JSON string
-	int32_t sell;		// sell value as an integer (^)
+	uint32_t sell;		// sell value as an integer (^)
 	double sellf;		// sell value as a double-precision float
 } rates_t;
 

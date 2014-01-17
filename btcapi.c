@@ -67,7 +67,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "AUD",
-			.sign = L"$",
+			.sign = u8"$",
 			.sf = (1e5)
 		},
 
@@ -75,7 +75,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "CAD",
-			.sign = L"$",
+			.sign = u8"$",
 			.sf = (1e5)
 		},
 
@@ -83,7 +83,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "CHF",
-			.sign = L"Fr.",
+			.sign = u8"Fr.",
 			.sf = (1e5)
 		},
 
@@ -91,7 +91,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "CNY",
-			.sign = L"¥",
+			.sign = u8"\u00a5",
 			.sf = (1e5)
 		},
 
@@ -99,7 +99,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "CZK",
-			.sign = L"Kč.",
+			.sign = u8"K\u010d.",
 			.sf = (1e5)
 		},
 
@@ -107,7 +107,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "DKK",
-			.sign = L"kr.",
+			.sign = u8"kr.",
 			.sf = (1e5)
 		},
 		#endif
@@ -116,7 +116,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "EUR",
-			.sign = L"€",
+			.sign = u8"\u20ac",
 			.sf = (1e5)
 		},
 
@@ -125,7 +125,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "GBP",
-			.sign = L"£",
+			.sign = u8"\u00a3",
 			.sf = (1e5)
 		},
 
@@ -133,7 +133,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "HKD",
-			.sign = L"$",
+			.sign = u8"$",
 			.sf = (1e5)
 		},
 
@@ -141,7 +141,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "JPY",
-			.sign = L"¥",
+			.sign = u8"\u00a5",
 			.sf = (1e3)
 		},
 
@@ -149,7 +149,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "NOK",
-			.sign = L"kr.",
+			.sign = u8"kr.",
 			.sf = (1e5)
 		},
 
@@ -157,7 +157,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "PLN",
-			.sign = L"zł.",
+			.sign = u8"z\u0142.",
 			.sf = (1e5)
 		},
 		#endif
@@ -170,7 +170,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 			#elif defined(BTC_E_API)
 			.name = "RUR",
 			#endif
-			.sign = L"p.",
+			.sign = u8"p.",
 			.sf = (1e5)
 		},
 
@@ -179,7 +179,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "SEK",
-			.sign = L"kr.",
+			.sign = u8"kr.",
 			.sf = (1e3)
 		},
 
@@ -187,7 +187,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "SGD",
-			.sign = L"$",
+			.sign = u8"$",
 			.sf = (1e5)
 		},
 
@@ -195,7 +195,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "THB",
-			.sign = L"฿",
+			.sign = u8"\u0e3f",
 			.sf = (1e5)
 		},
 		#endif
@@ -204,7 +204,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 
 		{
 			.name = "USD",
-			.sign = L"$",
+			.sign = u8"$",
 			.sf = (1e5)
 		},
 	};
@@ -260,7 +260,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 		if(strcmp(mod_currcy, currencies[i].name) == 0) {
 			valid_currcy = true;
 			strcpy(btcrates.currcy.name, currencies[i].name);
-			wcscpy(btcrates.currcy.sign, currencies[i].sign);
+			strcpy(btcrates.currcy.sign, currencies[i].sign);
 			btcrates.currcy.sf = currencies[i].sf;
 			break;
 		}
@@ -350,18 +350,18 @@ bool parse_json(const char *const json, btcerr_t *const api_err) {
 		return false;
 	}
 
-	btcrates.result = (strcmp(json_string_value(json_object_get(root, "result")), "success")) ? false : true;
+	btcrates.result = strcmp(json_string_value(json_object_get(root, "result")), "success") ? false : true;
 	#endif
 
 	// stores trade values as int and float
 
 	#ifdef MT_GOX_API
-	btcrates.buy = atof(json_string_value(json_object_get(buy, "value_int")));  // MtGox uses string for their numbers for whatever reason
-	btcrates.buyf = ((double) btcrates.buy / btcrates.currcy.sf);
-	btcrates.sell = atof(json_string_value(json_object_get(sell, "value_int")));
-	btcrates.sellf = ((double) btcrates.sell / btcrates.currcy.sf);
+	btcrates.buy = atoi(json_string_value(json_object_get(buy, "value_int")));  // MtGox uses strings for their prices se we have to convert it to a string
+	btcrates.buyf = ((double) btcrates.buy / (double) btcrates.currcy.sf);
+	btcrates.sell = atoi(json_string_value(json_object_get(sell, "value_int")));
+	btcrates.sellf = ((double) btcrates.sell / (double) btcrates.currcy.sf);
 	#elif defined(BTC_E_API)
-	btcrates.buyf = (double) json_number_value(json_object_get(ticker, "buy"));  // no integer value in BTC-e's API so have to calculate it manually
+	btcrates.buyf = (double) json_number_value(json_object_get(ticker, "buy"));  // no integer value in BTC-e's API so we have to calculate it manually
 	btcrates.buy = (int) (btcrates.buyf * btcrates.currcy.sf);
 	btcrates.sellf = (double) json_number_value(json_object_get(ticker, "sell"));
 	btcrates.sell = (int) (btcrates.sellf * btcrates.currcy.sf);
