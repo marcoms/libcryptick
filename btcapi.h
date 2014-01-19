@@ -55,15 +55,15 @@ bool fill_rates(const char *const currcy, btcerr_t *const api_err);
 
 // uses libcURL to access a Bitcoin API, calls write_data, then returns a JSON string
 
-char *get_json(const char *currcy, btcerr_t *const api_err);
+char *_get_json(const char *currcy, btcerr_t *const api_err);
 
 // uses jansson to parse the JSON string and returns a rates_t containing exchange information
 
-bool parse_json(const char *const json, btcerr_t *const api_err);
+bool _parse_json(const char *const json, btcerr_t *const api_err);
 
 // libcURL callback function that copies the buffer to a local string
 
-size_t write_data(
+size_t _write_data(
 	const char *const buffer,
 	const size_t size,
 	const size_t nmemb,

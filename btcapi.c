@@ -41,20 +41,20 @@ rates_t btcrates = {
 bool fill_rates(const char *const currcy, btcerr_t *const api_err) {
 	char *json;
 
-	json = get_json(currcy, api_err);
+	json = _get_json(currcy, api_err);
 	if(api_err -> err) {
 		free(json);
 		return false;
 	}
 
-	parse_json(json, api_err);
+	_parse_json(json, api_err);
 	free(json);
 
 	if(api_err -> err) return false;
 	return true;
 }
 
-char *get_json(const char *const currcy, btcerr_t *const api_err) {
+char *_get_json(const char *const currcy, btcerr_t *const api_err) {
 	#ifdef MT_GOX_API
 	char api_url[] = "https://data.mtgox.com/api/2/BTCxxx/money/ticker_fast";
 	#elif defined(BTC_E_API)
@@ -289,7 +289,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 	) api_url[i] = mod_currcy[j];
 
 	curl_easy_setopt(handle, CURLOPT_URL, api_url);
-	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, write_data);  // sets the function to call
+	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, _write_data);  // sets the function to call
 	curl_easy_setopt(handle, CURLOPT_WRITEDATA, json);  // sets the data to be given to the function
 
 	result = curl_easy_perform(handle);  // performs the request, stores result
@@ -305,7 +305,7 @@ char *get_json(const char *const currcy, btcerr_t *const api_err) {
 	return json;
 }
 
-bool parse_json(const char *const json, btcerr_t *const api_err) {
+bool _parse_json(const char *const json, btcerr_t *const api_err) {
 	#ifdef MT_GOX_API
 	json_t *buy;
 	json_t *data;
@@ -371,7 +371,7 @@ bool parse_json(const char *const json, btcerr_t *const api_err) {
 	return true;
 }
 
-size_t write_data(
+size_t _write_data(
 	const char *const buffer,
 	const size_t size,
 	const size_t nmemb,
