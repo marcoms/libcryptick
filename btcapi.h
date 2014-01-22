@@ -67,7 +67,7 @@ size_t _write_data(
 	const char *const buffer,
 	const size_t size,
 	const size_t nmemb,
-	const void *const userdata
+	const void *const data
 );
 
 #endif

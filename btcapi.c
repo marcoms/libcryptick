@@ -218,9 +218,7 @@ char *_get_json(const char *const currcy, btcerr_t *const api_err) {
 	strcpy(mod_currcy, currcy);
 
 	json = malloc(sizeof (char) * 1600);
-	if(json == NULL) {
-		abort();
-	}
+	if(json == NULL) abort();
 
 	handle = curl_easy_init();
 	if(!handle) {
@@ -244,20 +242,12 @@ char *_get_json(const char *const currcy, btcerr_t *const api_err) {
 
 	// uppercases the currency string
 
-	for(
-		uint_fast8_t i = 0;
-		i < ((sizeof mod_currcy[0]) * (sizeof mod_currcy));
-		++i
-	) mod_currcy[i] = toupper(mod_currcy[i]);
+	for(uint_fast8_t i = 0; i < ((sizeof mod_currcy[0]) * (sizeof mod_currcy)); ++i) mod_currcy[i] = toupper(mod_currcy[i]);
 
 	// validation
 
-	for(
-		uint_fast8_t i = 0;
-		i < ((sizeof currencies / sizeof currencies[0]));
-		++i
-	) {
-		if(strcmp(mod_currcy, currencies[i].name) == 0) {
+	for(uint_fast8_t i = 0; i < ((sizeof currencies / sizeof currencies[0])); ++i) {
+		if(!strcmp(mod_currcy, currencies[i].name)) {
 			valid_currcy = true;
 			strcpy(btcrates.currcy.name, currencies[i].name);
 			strcpy(btcrates.currcy.sign, currencies[i].sign);
@@ -274,19 +264,10 @@ char *_get_json(const char *const currcy, btcerr_t *const api_err) {
 
 	#ifdef BTC_E_API
 	// lowercases the currency string
-
-	for(
-		uint_fast8_t i = 0;
-		i < ((sizeof mod_currcy[0]) * (sizeof mod_currcy));
-		++i
-	) mod_currcy[i] = tolower(mod_currcy[i]);
+	for(uint_fast8_t i = 0; i < ((sizeof mod_currcy[0]) * (sizeof mod_currcy)); ++i) mod_currcy[i] = tolower(mod_currcy[i]);
 	#endif
 
-	for(
-		uint_fast8_t i = API_URL_CURRCY_POS, j = 0;
-		i < (API_URL_CURRCY_POS + 3);
-		++i, ++j
-	) api_url[i] = mod_currcy[j];
+	for(uint_fast8_t i = API_URL_CURRCY_POS, j = 0; i < (API_URL_CURRCY_POS + 3); ++i, ++j) api_url[i] = mod_currcy[j];
 
 	curl_easy_setopt(handle, CURLOPT_URL, api_url);
 	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, _write_data);  // sets the function to call
@@ -375,8 +356,8 @@ size_t _write_data(
 	const char *const buffer,
 	const size_t size,
 	const size_t nmemb,
-	const void *const userdata
+	const void *const data
 ) {
-	strcpy((char *) userdata, buffer);
+	strcpy((char *) data, buffer);
 	return (size * nmemb);
 }
