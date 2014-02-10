@@ -34,34 +34,34 @@
 
 #include "btcapi.h"
 
-rates_t btcrates = {
+btc_rates_t btcrates = {
 	.got = false
 };
 
-bool fill_rates(const char *const currcy, btcerr_t *const api_err) {
+bool btc_fill_rates(const char *const currcy, btc_err_t *const api_err) {
 	char *json;
 
-	json = _get_json(currcy, api_err);
+	json = _btc_get_json(currcy, api_err);
 	if(api_err -> err) {
 		free(json);
 		return false;
 	}
 
-	_parse_json(json, api_err);
+	_btc_parse_json(json, api_err);
 	free(json);
 
 	if(api_err -> err) return false;
 	return true;
 }
 
-char *_get_json(const char *const currcy, btcerr_t *const api_err) {
+char *_btc_get_json(const char *const currcy, btc_err_t *const api_err) {
 	#ifdef MT_GOX_API
 	char api_url[] = "https://data.mtgox.com/api/2/BTCxxx/money/ticker_fast";
 	#elif defined(BTC_E_API)
 	char api_url[] = "https://btc-e.com/api/2/btc_xxx/ticker";
 	#endif
 
-	currcy_t currencies[] = {
+	btc_currcy_t currencies[] = {
 		#ifdef MT_GOX_API
 		// australia
 
@@ -286,7 +286,7 @@ char *_get_json(const char *const currcy, btcerr_t *const api_err) {
 	return json;
 }
 
-bool _parse_json(const char *const json, btcerr_t *const api_err) {
+bool _btc_parse_json(const char *const json, btc_err_t *const api_err) {
 	#ifdef MT_GOX_API
 	json_t *buy;
 	json_t *data;
@@ -352,7 +352,7 @@ bool _parse_json(const char *const json, btcerr_t *const api_err) {
 	return true;
 }
 
-size_t _write_data(
+size_t _btc_write_data(
 	const char *const buffer,
 	const size_t size,
 	const size_t nmemb,

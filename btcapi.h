@@ -27,13 +27,13 @@
 typedef struct {
 	bool err;
 	char errstr[64];
-} btcerr_t;
+} btc_err_t;
 
 typedef struct {
 	char name[3 + 1];
 	char sign[8];  // a somewhat arbitrary size as utf-8 characters can fill more than one char
 	uint32_t sf;
-} currcy_t;
+} btc_currcy_t;
 
 // struct containing current exchange information
 
@@ -45,25 +45,25 @@ typedef struct {
 	bool result;		// result of the JSON string
 	uint32_t sell;		// sell value as an integer (^)
 	double sellf;		// sell value as a double-precision float
-} rates_t;
+} btc_rates_t;
 
-extern rates_t btcrates;
+extern btc_rates_t btcrates;
 
 // poplates the global btcrates struct
 
-bool fill_rates(const char *const currcy, btcerr_t *const api_err);
+bool btc_fill_rates(const char *const currcy, btc_err_t *const api_err);
 
 // uses libcURL to access a Bitcoin API, calls write_data, then returns a JSON string
 
-char *_get_json(const char *currcy, btcerr_t *const api_err);
+char *_btc_get_json(const char *currcy, btc_err_t *const api_err);
 
 // uses jansson to parse the JSON string and returns a rates_t containing exchange information
 
-bool _parse_json(const char *const json, btcerr_t *const api_err);
+bool _btc_parse_json(const char *const json, btc_err_t *const api_err);
 
 // libcURL callback function that copies the buffer to a local string
 
-size_t _write_data(
+size_t _btc_write_data(
 	const char *const buffer,
 	const size_t size,
 	const size_t nmemb,
