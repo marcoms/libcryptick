@@ -270,7 +270,7 @@ char *_btc_get_json(const char *const currcy, btc_err_t *const api_err) {
 	for(uint_fast8_t i = API_URL_CURRCY_POS, j = 0; i < (API_URL_CURRCY_POS + 3); ++i, ++j) api_url[i] = mod_currcy[j];
 
 	curl_easy_setopt(handle, CURLOPT_URL, api_url);
-	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, _write_data);  // sets the function to call
+	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, _btc_write_data);  // sets the function to call
 	curl_easy_setopt(handle, CURLOPT_WRITEDATA, json);  // sets the data to be given to the function
 
 	result = curl_easy_perform(handle);  // performs the request, stores result
