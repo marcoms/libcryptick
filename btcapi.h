@@ -47,19 +47,17 @@ typedef struct {
 	double sellf;		// sell value as a double-precision float
 } btc_rates_t;
 
-extern btc_rates_t btcrates;
+// returns the price of Bitcoin
 
-// poplates the global btcrates struct
-
-bool btc_fill_rates(const char *const currcy, btc_err_t *const api_err);
+btc_rates_t btc_fill_rates(const char *const currcy, btc_err_t *const api_err);
 
 // uses libcURL to access a Bitcoin API, calls write_data, then returns a JSON string
 
-char *_btc_get_json(const char *currcy, btc_err_t *const api_err);
+char *_btc_get_json(const char *currcy, btc_rates_t *const rates, btc_err_t *const api_err);
 
 // uses jansson to parse the JSON string and returns a rates_t containing exchange information
 
-bool _btc_parse_json(const char *const json, btc_err_t *const api_err);
+bool _btc_parse_json(const char *const json, btc_rates_t *const rates, btc_err_t *const api_err);
 
 // libcURL callback function that copies the buffer to a local string
 
