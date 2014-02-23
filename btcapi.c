@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "btcapi.h"
+#include "btcapi_currencies.h"
 
 btc_err_t btc_fill_rates(btc_rates_t *const rates, const char *const currcy) {
 	btc_err_t api_err;
@@ -59,154 +60,6 @@ btc_err_t _btc_get_json(char const *json, btc_rates_t *const rates, const char *
 	#elif defined(BTC_E_API)
 	char api_url[] = "https://btc-e.com/api/2/btc_xxx/ticker";
 	#endif
-
-	btc_currcy_t currencies[] = {
-		#ifdef MT_GOX_API
-		// australia
-
-		{
-			.name = "AUD",
-			.sign = u8"$",
-			.sf = (1e5)
-		},
-
-		// canada
-
-		{
-			.name = "CAD",
-			.sign = u8"$",
-			.sf = (1e5)
-		},
-
-		// switzerland
-
-		{
-			.name = "CHF",
-			.sign = u8"Fr.",
-			.sf = (1e5)
-		},
-
-		// china
-
-		{
-			.name = "CNY",
-			.sign = u8"\u00a5",
-			.sf = (1e5)
-		},
-
-		// czech republic
-
-		{
-			.name = "CZK",
-			.sign = u8"K\u010d.",
-			.sf = (1e5)
-		},
-
-		// denmark
-
-		{
-			.name = "DKK",
-			.sign = u8"kr.",
-			.sf = (1e5)
-		},
-		#endif
-
-		// eurozone
-
-		{
-			.name = "EUR",
-			.sign = u8"\u20ac",
-			.sf = (1e5)
-		},
-
-		#ifdef MT_GOX_API
-		// great britain
-
-		{
-			.name = "GBP",
-			.sign = u8"\u00a3",
-			.sf = (1e5)
-		},
-
-		// hong kong
-
-		{
-			.name = "HKD",
-			.sign = u8"$",
-			.sf = (1e5)
-		},
-
-		// japan
-
-		{
-			.name = "JPY",
-			.sign = u8"\u00a5",
-			.sf = (1e3)
-		},
-
-		// norway
-
-		{
-			.name = "NOK",
-			.sign = u8"kr.",
-			.sf = (1e5)
-		},
-
-		// poland
-
-		{
-			.name = "PLN",
-			.sign = u8"z\u0142.",
-			.sf = (1e5)
-		},
-		#endif
-
-		// russia
-
-		{
-			#ifdef MT_GOX_API
-			.name = "RUB",
-			#elif defined(BTC_E_API)
-			.name = "RUR",
-			#endif
-			.sign = u8"p.",
-			.sf = (1e5)
-		},
-
-		#ifdef MT_GOX_API
-		// sweden
-
-		{
-			.name = "SEK",
-			.sign = u8"kr.",
-			.sf = (1e3)
-		},
-
-		// singapore
-
-		{
-			.name = "SGD",
-			.sign = u8"$",
-			.sf = (1e5)
-		},
-
-		// thailand
-
-		{
-			.name = "THB",
-			.sign = u8"\u0e3f",
-			.sf = (1e5)
-		},
-		#endif
-
-		// united states
-
-		{
-			.name = "USD",
-			.sign = u8"$",
-			.sf = (1e5)
-		},
-	};
 
 	btc_err_t api_err;
 	char mod_currcy[3 + 1];
@@ -240,12 +93,12 @@ btc_err_t _btc_get_json(char const *json, btc_rates_t *const rates, const char *
 	for(uint_fast8_t i = 0; i < ((sizeof mod_currcy[0]) * (sizeof mod_currcy)); ++i) mod_currcy[i] = toupper(mod_currcy[i]);
 
 	// validation
-	for(uint_fast8_t i = 0; i < ((sizeof currencies / sizeof currencies[0])); ++i) {
-		if(!strcmp(mod_currcy, currencies[i].name)) {
+	for(uint_fast8_t i = 0; i < ((sizeof btc_currencies / sizeof btc_currencies[0])); ++i) {
+		if(!strcmp(mod_currcy, btc_currencies[i].name)) {
 			valid_currcy = true;
-			strcpy(rates -> currcy.name, currencies[i].name);
-			strcpy(rates -> currcy.sign, currencies[i].sign);
-			rates -> currcy.sf = currencies[i].sf;
+			strcpy(rates -> currcy.name, btc_currencies[i].name);
+			strcpy(rates -> currcy.sign, btc_currencies[i].sign);
+			rates -> currcy.sf = btc_currencies[i].sf;
 			break;
 		}
 	}
