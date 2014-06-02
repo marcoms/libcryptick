@@ -1,20 +1,20 @@
 /*
 	Copyright (C) 2013-2014 Marco Scannadinari <m@scannadinari.co.uk>
 
-	This file is part of libbtcapi.
+	This file is part of libcryptick.
 
-	libbtcapi is free software: you can redistribute it and/or modify
+	libcryptick is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version.
 
-	libbtcapi is distributed in the hope that it will be useful,
+	libcryptick is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
 
 	You should have received a copy of the GNU General Public License
-	along with libbtcapi.  If not, see <http://www.gnu.org/licenses/>.
+	along with libcryptick.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #if MT_GOX_API
@@ -32,8 +32,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "btcapi.h"
-#include "btcapi_currencies.h"
+#include "cryptick.h"
+#include "cryptick_currencies.h"
 
 btc_err_t btc_fill_rates(btc_rates_t *const rates, const char *const currcy) {
 	btc_err_t api_err;

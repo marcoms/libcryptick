@@ -1,15 +1,15 @@
-libbtcapi
-=========
+libcryptick
+===========
 
-libbtcapi is a C library that accesses both MtGox and BTC-E's Bitcoin tickers in multiple currencies
+libcryptick (pronounced "libcryptic") is a C library that provides an interface for cryptocurrency exchange rate tickers.
 
-Using lbibbtcapi in projects
+Using libcryptick in projects
 ----------------------------
 
 Copy the header and source file to the same desired location in your projects source tree and compile with:
 
-    $CC -c -o btcapi.o btcapi.c
+    $CC -c -o cryptick.o cryptick.c
 
 Then link with your program with:
 
-    $CC $(pkg-config libcurl --libs --cflags) $(pkg-config jansson --libs --cflags) btcapi.o $YOUR_OBJECT_CODE -o $EXECUTABLE
+    $CC $(pkg-config libcurl --libs --cflags) $(pkg-config jansson --libs --cflags) cryptick.o $YOUR_OBJECT_CODE -o $EXECUTABLE
