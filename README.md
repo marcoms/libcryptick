@@ -6,9 +6,11 @@ libcryptick (pronounced "libcryptic") is a C library that provides an interface 
 Using libcryptick in projects
 ----------------------------
 
+Note that you will need a modern compiler supporting the C11 standard.
+
 Copy the header and source file to the same desired location in your projects source tree and compile with:
 
-    $CC -c -o cryptick.o cryptick.c
+    $CC -c -Wall -std=c11 -o cryptick.o cryptick.c
 
 Then link with your program with:
 
