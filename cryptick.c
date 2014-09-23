@@ -17,196 +17,322 @@
 	along with libcryptick.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#if MT_GOX_API
-#define API_URL_CURRCY_POS 32  // position to insert currency
-#elif BTC_E_API
-#define API_URL_CURRCY_POS  28
-#endif
-
 #include <curl/curl.h>
-#include <ctype.h>
-#include <jansson.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
 #include <string.h>
 
-#include "cryptick.h"
-#include "cryptick_currencies.h"
+#include "cryptick-priv.h"
 
-btc_err_t btc_fill_rates(btc_rates_t *const rates, const char *const currcy) {
-	btc_err_t api_err;
-	char *json;
+crtk_error crtk_market_get(crtk_market *const market, const char *const api, const char *const exchange, const char *const coin) {
+	crtk_error lib_error;
 
-	json = malloc(1600);
-	if(!json) abort();
+	struct crtk__api_config api_config;
+	lib_error = crtk__api_config_parse(&api_config, api, exchange, coin);
+	if(lib_error.error) return lib_error;
 
-	api_err = _btc_get_json(json, rates, currcy);
-	if(api_err.err) {
-		free(json);
-		return api_err;
-	}
+	char json[65536];
+	lib_error = crtk__url_get(json, api_config.url);
+	if(lib_error.error) return lib_error;
 
-	api_err = _btc_parse_json(rates, json);
-	free(json);
+	lib_error = crtk__json_parse(market, json, &api_config);
+	if(lib_error.error) return lib_error;
 
-	return api_err;
+	return lib_error;
 }
 
-btc_err_t _btc_get_json(char const *json, btc_rates_t *const rates, const char *const currcy) {
-	#ifdef MT_GOX_API
-	char api_url[] = "https://data.mtgox.com/api/2/BTCxxx/money/ticker_fast";
-	#elif defined(BTC_E_API)
-	char api_url[] = "https://btc-e.com/api/2/btc_xxx/ticker";
-	#endif
+static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_config, const char *const api, const char *const exchange, const char *const coin) {
+	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
 
-	btc_err_t api_err;
-	char mod_currcy[3 + 1];
-	CURL *handle;
-	CURLcode result;
-	bool valid_currcy;
+	char api_config_path[32] = "/etc/libcryptick/";
+	strcat(api_config_path, api);
+	strcat(api_config_path, ".json");
 
-	api_err.err = false;
+	json_error_t json_error;
+	json_t *root                     = json_load_file(api_config_path, 0, &json_error);
+	json_t *name                     = json_object_get(root, "name");
+	json_t *url                      = json_object_get(root, "url");
+	json_t *status_success           = json_object_get(root, "status_success");
+	json_t *number_format            = json_object_get(root, "number_format");
+	json_t *paths                    = json_object_get(root, "paths");
+	json_t *paths_status_desc        = json_object_get(paths, "status_desc");
+	json_t *paths_status             = json_object_get(paths, "status");
+	json_t *paths_buy                = json_object_get(paths, "buy");
+	json_t *paths_sell               = json_object_get(paths, "sell");
 
-	strcpy(mod_currcy, currcy);
+	// check spec conformance
 
-	handle = curl_easy_init();
-	if(!handle) {
-		api_err.err = true;
-		strcpy(api_err.errstr, "unable to initialise libcurl session");
-		return api_err;
-	}
+	if(
+		!(
+			root && name && url && number_format && paths && paths_buy && paths_sell
+			&& (json_is_string(url) || json_is_array(url))
+			&& json_is_string(number_format)
+			&& json_is_object(paths)
+			&& json_is_array(paths_buy)
+			&& json_is_array(paths_sell)
+		)
+		|| (paths_status && !status_success)
+		|| (status_success && !(
+			json_is_string(status_success)
+			|| json_is_integer(status_success)
+			|| json_is_boolean(status_success)
+		))
+	) CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
 
-	valid_currcy = false;
+	// name
+	strcpy(api_config->name, json_string_value(name));
 
-	curl_global_init(CURL_GLOBAL_ALL);
+	// url
 
-	// length check
-	if(strlen(currcy) != 3) {
-		api_err.err = true;
-		strcpy(api_err.errstr, "bad currency length");
-		return api_err;
-	}
+	if(json_is_array(url)) {  // format array
+		crtk__format_array_parse(api_config->url, url, exchange, coin);
+	} else if(json_is_string(url)) {
+		strcpy(api_config->url, json_string_value(url));
+	} else CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
 
-	// uppercases the currency string
-	for(uint_fast8_t i = 0; i < ((sizeof mod_currcy[0]) * (sizeof mod_currcy)); ++i) mod_currcy[i] = toupper(mod_currcy[i]);
+	// status_success
 
-	// validation
-	for(uint_fast8_t i = 0; i < ((sizeof btc_currencies / sizeof btc_currencies[0])); ++i) {
-		if(!strcmp(mod_currcy, btc_currencies[i].name)) {
-			valid_currcy = true;
-			strcpy(rates -> currcy.name, btc_currencies[i].name);
-			strcpy(rates -> currcy.sign, btc_currencies[i].sign);
-			rates -> currcy.sf = btc_currencies[i].sf;
+	if(status_success) switch(json_typeof(status_success)) {
+		case JSON_STRING:
+			api_config->status_success.type = CRTK__STATUS_TYPE_STRING;
+			strcpy(api_config->status_success.value.string, json_string_value(status_success));
 			break;
+
+		case JSON_INTEGER:
+			api_config->status_success.type = CRTK__STATUS_TYPE_INTEGER;
+			api_config->status_success.value.integer = (int16_t) json_integer_value(status_success);
+			break;
+
+		case JSON_TRUE:
+		case JSON_FALSE:
+			api_config->status_success.type = CRTK__STATUS_TYPE_BOOLEAN;
+			api_config->status_success.value.boolean = (json_typeof(status_success) == JSON_TRUE ? true : false);
+			break;
+
+		default:
+			CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+			break;
+	}
+
+	// number_format
+
+	const char *const number_format_str = json_string_value(number_format);
+	if(!strcmp("string", number_format_str)) {
+		api_config->number_format = CRTK__NUMBER_FORMAT_STRING;
+	} else if(strcmp("real", number_format_str)) {
+		api_config->number_format = CRTK__NUMBER_FORMAT_REAL;
+	} else CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+
+	// paths
+
+	// paths.status
+	if(paths_status) crtk__pc_array_parse(api_config->paths.status, paths_status, exchange, coin);
+
+	// paths.status_desc
+	if(paths_status_desc) crtk__pc_array_parse(api_config->paths.status_desc, paths_status_desc, exchange, coin);
+
+	// paths.buy
+	crtk__pc_array_parse(api_config->paths.buy, paths_buy, exchange, coin);
+
+	// paths.sell
+	crtk__pc_array_parse(api_config->paths.sell, paths_sell, exchange, coin);
+
+	json_decref(root);
+	return lib_error;
+}
+
+static crtk_error crtk__url_get(const char *json, const char *const url) {
+	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
+
+	CURLcode result = curl_global_init(CURL_GLOBAL_ALL);
+	if(result != CURLE_OK) CRTK__ERROR_SET_DESC_RETURN(lib_error, LIBCURL, curl_easy_strerror(result));
+
+	CURL *handle = curl_easy_init();
+	if(!handle) CRTK__ERROR_SET_DESC_RETURN(lib_error, LIBCURL, "failed libcurl init");
+
+	curl_easy_setopt(handle, CURLOPT_URL, url);
+	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, crtk__data_write);
+	curl_easy_setopt(handle, CURLOPT_WRITEDATA, json);
+
+	result = curl_easy_perform(handle);
+
+	if(result != CURLE_OK) CRTK__ERROR_SET_DESC_RETURN(lib_error, LIBCURL, curl_easy_strerror(result));
+
+	curl_easy_cleanup(handle);
+	return lib_error;
+}
+
+static crtk_error crtk__json_parse(crtk_market *const market, const char *const json, const struct crtk__api_config *const api_config) {
+	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
+	json_error_t json_error;
+
+	json_t *root = json_loads(json, 0, &json_error);
+	if(!root) CRTK__ERROR_SET_DESC_RETURN(lib_error, API, json_error.text);
+
+	json_t *status;
+	if(api_config->paths.status[0][0]) crtk__object_get(&status, root, api_config->paths.status);
+
+	// first check for error
+
+	bool api_error = false;
+	if(api_config->paths.status[0][0]) {
+		if(!status) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+
+		switch(api_config->status_success.type) {
+			case CRTK__STATUS_TYPE_STRING:
+				if(!json_is_string(status)) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+				if(strcmp(json_string_value(status), api_config->status_success.value.string)) api_error = true;
+				break;
+
+			case CRTK__STATUS_TYPE_BOOLEAN:
+				if(!json_is_boolean(status)) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+				if(json_is_true(status) != api_config->status_success.value.boolean) api_error = true;
+				break;
+
+			case CRTK__STATUS_TYPE_INTEGER:
+				if(!json_is_integer(status)) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+				if((int16_t) json_integer_value(status) != api_config->status_success.value.integer) api_error = true;
+				break;
 		}
 	}
 
-	if(!valid_currcy) {
-		api_err.err = true;
-		strcpy(api_err.errstr, "invalid currency");
-		return api_err;
+	if(api_error) {
+		if(api_config->paths.status_desc[0][0]) {
+			json_t *status_desc;
+			lib_error = crtk__object_get(&status_desc, root, api_config->paths.status_desc);
+			if(lib_error.error == CRTK_ERROR_RESPONSE_CONFIG_CONFLICT) return lib_error;
+
+			CRTK__ERROR_SET_DESC_RETURN(lib_error, API, json_string_value(status_desc));
+		} else {
+			CRTK__ERROR_SET_RETURN(lib_error, API);
+		}
 	}
 
-	#ifdef BTC_E_API
-	// lowercases the currency string
-	for(uint_fast8_t i = 0; i < ((sizeof mod_currcy[0]) * (sizeof mod_currcy)); ++i) mod_currcy[i] = tolower(mod_currcy[i]);
-	#endif
+	// no error
 
-	for(uint_fast8_t i = API_URL_CURRCY_POS, j = 0; i < (API_URL_CURRCY_POS + 3); ++i, ++j) api_url[i] = mod_currcy[j];
-
-	curl_easy_setopt(handle, CURLOPT_URL, api_url);
-	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, _btc_write_data);  // sets the function to call
-	curl_easy_setopt(handle, CURLOPT_WRITEDATA, json);  // sets the data to be given to the function
-
-	result = curl_easy_perform(handle);  // performs the request, stores result
-	if(result != CURLE_OK) {
-		api_err.err = true;
-		strcpy(api_err.errstr, curl_easy_strerror(result));
-		return api_err;
-	}
-
-	curl_easy_cleanup(handle);
-	curl_global_cleanup();
-
-	return api_err;
-}
-
-btc_err_t _btc_parse_json(btc_rates_t *const rates, const char *const json) {
-	btc_err_t api_err;
-	#ifdef MT_GOX_API
 	json_t *buy;
-	json_t *data;
-	#endif
-	json_error_t json_error;
-	json_t *root;
-	#ifdef MT_GOX_API
+	crtk__object_get(&buy, root, api_config->paths.buy);
+
 	json_t *sell;
-	#elif defined(BTC_E_API)
-	json_t *ticker;
-	#endif
+	crtk__object_get(&sell, root, api_config->paths.sell);
 
-	api_err.err = false;
+	if (
+		!(buy && sell)
+		|| (api_config->paths.status[0][0] && !status)
+	) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
 
-	root = json_loads(json, 0, &json_error);
-	if(!root) {
-		api_err.err = true;
-		strcpy(api_err.errstr, json_error.text);
-		return api_err;
+	switch(api_config->number_format) {
+		case CRTK__NUMBER_FORMAT_STRING:
+			if(!(json_is_string(buy) && json_is_string(sell))) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+
+			// store values
+
+			market->buy = strtold(json_string_value(buy), NULL);
+			market->sell = strtold(json_string_value(sell), NULL);
+			market->buy_int = market->buy * CRTK__UNIT_FACTOR;
+			market->sell_int = market->sell * CRTK__UNIT_FACTOR;
+			break;
+
+		case CRTK__NUMBER_FORMAT_REAL:
+			if(!(json_is_real(buy) && json_is_real(sell))) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+
+			market->buy = json_real_value(buy);
+			market->sell = json_real_value(sell);
+			market->buy_int = market->buy * CRTK__UNIT_FACTOR;
+			market->sell_int = market->sell * CRTK__UNIT_FACTOR;
+			break;
 	}
-
-	#ifdef MT_GOX_API
-	data = json_object_get(root, "data");
-	if(!data) {
-		api_err.err = true;
-		strcpy(api_err.errstr, "couldn't get JSON object");
-		return api_err;
-	}
-	#elif defined(BTC_E_API)
-	ticker = json_object_get(root, "ticker");
-	if(!ticker) {
-		api_err.err = true;
-		strcpy(api_err.errstr, "couldn't get JSON object");
-		return api_err;
-	}
-	#endif
-
-	#ifdef MT_GOX_API
-	buy = json_object_get(data, "buy");
-	sell = json_object_get(data, "sell");
-	if(!buy || !sell) {
-		api_err.err = true;
-		strcpy(api_err.errstr, "couldn't get JSON object");
-		return api_err;
-	}
-
-	rates -> result = strcmp(json_string_value(json_object_get(root, "result")), "success") ? false : true;
-	#endif
-
-	// stores trade values as int and float
-	#ifdef MT_GOX_API
-	rates -> buy = atoi(json_string_value(json_object_get(buy, "value_int")));  // MtGox uses strings for their prices se we have to convert it to a string
-	rates -> buyf = ((double) rates -> buy / (double) rates -> currcy.sf);
-	rates -> sell = atoi(json_string_value(json_object_get(sell, "value_int")));
-	rates -> sellf = ((double) rates -> sell / (double) rates -> currcy.sf);
-	#elif defined(BTC_E_API)
-	rates -> buyf = (double) json_number_value(json_object_get(ticker, "buy"));  // no integer value in BTC-e's API so we have to calculate it manually
-	rates -> buy = (int) (rates -> buyf * rates -> currcy.sf);
-	rates -> sellf = (double) json_number_value(json_object_get(ticker, "sell"));
-	rates -> sell = (int) (rates -> sellf * rates -> currcy.sf);
-	#endif
 
 	json_decref(root);
-	return api_err;
+	return lib_error;
 }
 
-size_t _btc_write_data(
-	const char *const buffer,
-	const size_t size,
-	const size_t nmemb,
-	const void *const data
-) {
-	strcpy((char *) data, buffer);
-	return (size * nmemb);
+static crtk_error crtk__pc_array_parse(char (*dest)[CRTK__PC_ARRAY_SIZE], const json_t *const pc_array, const char *const exchange, const char *const coin) {
+	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
+
+	dest[0][0] = 0;  // empty-string terminated
+
+	{
+		json_t *el;
+		uint_fast8_t i;
+		uint_fast8_t len;
+		for(i = 0, len = json_array_size(pc_array); i < len; ++i) {
+			el = json_array_get(pc_array, i);
+
+			if(json_is_array(el)) {
+				crtk__format_array_parse(dest[i], el, exchange, coin);
+			} else if(json_is_string(el)) {
+				strcpy(dest[i], json_string_value(el));
+			} else {
+				CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+			}
+		}
+
+		dest[i][0] = 0;
+	}
+
+	return lib_error;
+}
+
+static size_t crtk__data_write(const char *const buffer, const size_t size, const size_t length, void *const dest) {
+	strncpy(dest, buffer, (size * length));
+	return (size * length);
+}
+
+static crtk_error crtk__format_array_parse(char *const dest, const json_t *const format_array, const char *const exchange, const char *const coin) {
+	crtk_error lib_error;
+	json_t *el;
+	char el_string[128];
+
+	dest[0] = 0;
+
+	{
+		uint_fast8_t i;
+		uint_fast8_t len;
+		for(i = 0, len = json_array_size(format_array); i < len; ++i) {
+			el = json_array_get(format_array, i);
+			strcpy(el_string, json_string_value(el));
+
+			if(!el_string[0]) {
+				CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+			}
+
+			crtk__format_replace(el_string, exchange, coin);
+			strcat(dest, el_string);
+		}
+	}
+
+	return lib_error;
+}
+
+static void crtk__format_replace(char *const format, const char *const exchange, const char *const coin) {
+	if(!strcmp(format, "{c}")) {
+		strcpy(format, coin);
+	} else if(!strcmp(format, "{e}")) {
+		strcpy(format, exchange);
+	}
+}
+
+static crtk_error crtk__object_get(json_t **dest, const json_t *const root, const char (*const pc_array)[CRTK__PC_ARRAY_SIZE]) {
+	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
+
+	uint_fast8_t i;
+	json_t *children[CRTK__PC_ARRAY_SIZE];
+	for(i = 0; pc_array[i][0]; ++i) {
+		children[i] = json_object_get((i == 0 ? root : children[i - 1]), pc_array[i]);
+		if(!children[i]) {
+			*dest = NULL;
+			CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+		}
+	}
+
+	*dest = children[i - 1];
+	return lib_error;
+}
+
+long double crtk_market_int_to_float(uint64_t value) {
+	return (value / CRTK__UNIT_FACTOR);
+}
+
+uint64_t crtk_market_float_to_int(long double value) {
+	return (value * CRTK__UNIT_FACTOR);
 }

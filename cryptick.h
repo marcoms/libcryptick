@@ -17,50 +17,68 @@
 	along with libcryptick.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+// PUBLIC DECLERATIONS ET AL FOR INTERNAL AND EXTERNAL USE
+
 #ifndef CRYPTICK_H
 #define CRYPTICK_H
 
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdint.h>
+#include <jansson.h>
 
+/*
+Range of errors that can be reported in a crtk_error
+*/
+enum crtk_error_value {
+	CRTK_ERROR_NONE = 0
+	, CRTK_ERROR_API_CONFIG_INVALID
+	, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT
+	, CRTK_ERROR_LIBCURL
+	, CRTK_ERROR_API
+};
+
+/*
+nonzero error denotes an error, and desc contains a string describing it
+*/
 typedef struct {
-	bool err;
-	char errstr[64];
-} btc_err_t;
+	enum crtk_error_value error;
+	char desc[64];
+} crtk_error;
 
+/*
+Contains buy and sell values for a market as double-precision floats
+*/
 typedef struct {
-	char name[3 + 1];
-	char sign[8];  // a somewhat arbitrary size as utf-8 characters can fill more than one char
-	uint32_t sf;
-} btc_currcy_t;
+	long double buy;
+	long double sell;
+	uint64_t buy_int;
+	uint64_t sell_int;
+} crtk_market;
 
-// struct containing current exchange information
-typedef struct {
-	uint32_t buy;         // buy value as an integer (more precise)
-	double buyf;          // buy value as a double-precision float
-	btc_currcy_t currcy;  // structure containing currency information
-	bool got;             // obtained?
-	bool result;          // result of the JSON string
-	uint32_t sell;        // sell value as an integer
-	double sellf;         // sell value as a double-precision float
-} btc_rates_t;
+// MAIN FUNCTIONS
 
-// stores the price of Bitcoin
-btc_err_t btc_fill_rates(btc_rates_t *rates, const char *const currcy);
+/*
+Retrieves the market for exchange/coin, using api, if a config file exists
+*/
+crtk_error crtk_market_get(
+	crtk_market *const market
+	, const char *const api
+	, const char *const exchange
+	, const char *const coin
+);
 
-// uses libcURL to access a Bitcoin API, calls write_data, then returns a JSON string
-btc_err_t _btc_get_json(char const *json, btc_rates_t *const rates, const char *const currcy);
+/*
+Returns the true floating-point representation of value
+*/
+long double crtk_market_int_to_float(
+	uint64_t value
+);
 
-// uses jansson to parse the JSON string and returns a rates_t containing exchange information
-btc_err_t _btc_parse_json(btc_rates_t *const rates, const char *const json);
-
-// libcURL callback function that copies the buffer to a local string
-size_t _btc_write_data(
-	const char *const buffer,
-	const size_t size,
-	const size_t nmemb,
-	const void *const data
+/*
+Returns an integer representation of value, usually for calculation purposes
+*/
+uint64_t crtk_market_float_to_int(
+	long double value
 );
 
 #endif
