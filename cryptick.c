@@ -23,6 +23,9 @@
 
 #include "cryptick-priv.h"
 
+#define CRTK__FORMAT_SPECIFIER_EXCHANGE "{e}"
+#define CRTK__FORMAT_SPECIFIER_COIN "{c}"
+
 crtk_error crtk_market_get(crtk_market *const market, const char *const api, const char *const exchange, const char *const coin) {
 	crtk_error lib_error;
 
@@ -305,10 +308,10 @@ static crtk_error crtk__format_array_parse(char *const dest, const json_t *const
 }
 
 static void crtk__format_replace(char *const format, const char *const exchange, const char *const coin) {
-	if(!strcmp(format, "{c}")) {
-		strcpy(format, coin);
-	} else if(!strcmp(format, "{e}")) {
+	if(!strcmp(format, CRTK__FORMAT_SPECIFIER_EXCHANGE)) {
 		strcpy(format, exchange);
+	} else if(!strcmp(format, CRTK__FORMAT_SPECIFIER_COIN)) {
+		strcpy(format, coin);
 	}
 }
 
