@@ -315,17 +315,16 @@ static void crtk__format_replace(char *const format, const char *const exchange,
 static crtk_error crtk__object_get(json_t **dest, const json_t *const root, const char (*const pc_array)[CRTK__PC_ARRAY_SIZE]) {
 	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
 
-	uint_fast8_t i;
-	json_t *children[CRTK__PC_ARRAY_SIZE];
-	for(i = 0; pc_array[i][0]; ++i) {
-		children[i] = json_object_get((i == 0 ? root : children[i - 1]), pc_array[i]);
-		if(!children[i]) {
+	json_t *child = json_object_get(root, pc_array[0]);
+	for(uint_fast8_t i = 1; pc_array[i][0]; ++i) {
+		child = json_object_get(child, pc_array[i]);
+		if(!child) {
 			*dest = NULL;
 			CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
 		}
 	}
 
-	*dest = children[i - 1];
+	*dest = child;
 	return lib_error;
 }
 
