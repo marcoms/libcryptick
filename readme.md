@@ -25,6 +25,10 @@ Example configuration file:
 
 libcryptick provides a simple interface, with only a few public functions and types defined. The library stores currency exchange rates as both integers and real numbers, allowing you to preform easy and precise calculations on the results.
 
+## work in progress
+
+Do note that this is not a finished library by any means. Currently only Linux is supported, and relies on a `/etc/libcryptick/` directory for configuration files to be stored in, which must be created manually. In the future perhaps a repo will be created containing a few sample configuration files to get started with. Who knows.
+
 ## dependencies
 
 * [libcurl](http://curl.haxx.se/libcurl/)
