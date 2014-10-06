@@ -29,3 +29,9 @@ libcryptick provides a simple interface, with only a few public functions and ty
 
 * [libcurl](http://curl.haxx.se/libcurl/)
 * [jansson](http://www.digip.org/jansson/)
+
+## compiling
+
+Compile with:
+
+	$CC cryptick.c `pkg-config libcurl --libs --cflags` `pkg-config jansson --libs --cflags` -c -o cryptick.o
