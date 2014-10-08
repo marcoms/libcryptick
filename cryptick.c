@@ -231,8 +231,8 @@ static crtk_error crtk__json_parse(crtk_market *const market, const char *const 
 
 			market->buy = strtold(json_string_value(buy), NULL);
 			market->sell = strtold(json_string_value(sell), NULL);
-			market->buy_int = market->buy * CRTK__UNIT_FACTOR;
-			market->sell_int = market->sell * CRTK__UNIT_FACTOR;
+			market->buy_int = crtk_market_float_to_int(market->buy);
+			market->sell_int = crtk_market_float_to_int(market->sell);
 			break;
 
 		case CRTK__NUMBER_FORMAT_REAL:
@@ -240,8 +240,8 @@ static crtk_error crtk__json_parse(crtk_market *const market, const char *const 
 
 			market->buy = json_real_value(buy);
 			market->sell = json_real_value(sell);
-			market->buy_int = market->buy * CRTK__UNIT_FACTOR;
-			market->sell_int = market->sell * CRTK__UNIT_FACTOR;
+			market->buy_int = crtk_market_float_to_int(market->buy);
+			market->sell_int = crtk_market_float_to_int(market->sell);
 			break;
 	}
 
