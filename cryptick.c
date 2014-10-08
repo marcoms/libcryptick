@@ -252,26 +252,20 @@ static crtk_error crtk__json_parse(crtk_market *const market, const char *const 
 static crtk_error crtk__pc_array_parse(char (*dest)[CRTK__PC_ARRAY_SIZE], const json_t *const pc_array, const char *const exchange, const char *const coin) {
 	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
 
-	dest[0][0] = 0;  // empty-string terminated
-
-	{
-		json_t *el;
-		uint_fast8_t i;
-		uint_fast8_t len;
-		for(i = 0, len = json_array_size(pc_array); i < len; ++i) {
-			el = json_array_get(pc_array, i);
-
-			if(json_is_array(el)) {
-				crtk__format_array_parse(dest[i], el, exchange, coin);
-			} else if(json_is_string(el)) {
-				strcpy(dest[i], json_string_value(el));
-			} else {
-				CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
-			}
+	json_t *el;
+	uint_fast8_t i = 0;
+	for(uint_fast8_t len = json_array_size(pc_array); i < len; ++i) {
+		el = json_array_get(pc_array, i);
+		if(json_is_array(el)) {
+			crtk__format_array_parse(dest[i], el, exchange, coin);
+		} else if(json_is_string(el)) {
+			strcpy(dest[i], json_string_value(el));
+		} else {
+			CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
 		}
-
-		dest[i][0] = 0;
 	}
+
+	dest[i][0] = 0;
 
 	return lib_error;
 }
@@ -283,25 +277,21 @@ static size_t crtk__data_write(const char *const buffer, const size_t size, cons
 
 static crtk_error crtk__format_array_parse(char *const dest, const json_t *const format_array, const char *const exchange, const char *const coin) {
 	crtk_error lib_error;
-	json_t *el;
-	char el_string[128];
 
 	dest[0] = 0;
 
-	{
-		uint_fast8_t i;
-		uint_fast8_t len;
-		for(i = 0, len = json_array_size(format_array); i < len; ++i) {
-			el = json_array_get(format_array, i);
-			strcpy(el_string, json_string_value(el));
+	json_t *el;
+	char el_string[128];
+	for(uint_fast8_t i = 0, len = json_array_size(format_array); i < len; ++i) {
+		el = json_array_get(format_array, i);
+		strcpy(el_string, json_string_value(el));
 
-			if(!el_string[0]) {
-				CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
-			}
-
-			crtk__format_replace(el_string, exchange, coin);
-			strcat(dest, el_string);
+		if(!el_string[0]) {
+			CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
 		}
+
+		crtk__format_replace(el_string, exchange, coin);
+		strcat(dest, el_string);
 	}
 
 	return lib_error;
