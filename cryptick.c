@@ -30,15 +30,12 @@ crtk_error crtk_market_get(crtk_market *const market, const char *const api, con
 	crtk_error lib_error;
 
 	struct crtk__api_config api_config;
-	lib_error = crtk__api_config_parse(&api_config, api, exchange, coin);
-	if(lib_error.error) return lib_error;
+	if((lib_error = crtk__api_config_parse(&api_config, api, exchange, coin)).error) return lib_error;
 
 	char json[65536];
-	lib_error = crtk__url_get(json, api_config.url);
-	if(lib_error.error) return lib_error;
+	if((lib_error = crtk__url_get(json, api_config.url)).error) return lib_error;
 
-	lib_error = crtk__json_parse(market, json, &api_config);
-	if(lib_error.error) return lib_error;
+	if((lib_error = crtk__json_parse(market, json, &api_config)).error) return lib_error;
 
 	return lib_error;
 }
@@ -46,7 +43,7 @@ crtk_error crtk_market_get(crtk_market *const market, const char *const api, con
 static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_config, const char *const api, const char *const exchange, const char *const coin) {
 	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
 
-	char api_config_path[32] = "/etc/libcryptick/";
+	char api_config_path[32] = "/etc/libcryptick/";  // TODO be a bit more dynamic?
 	strcat(api_config_path, api);
 	strcat(api_config_path, ".json");
 
