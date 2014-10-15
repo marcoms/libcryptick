@@ -10,4 +10,6 @@ shared: cryptick.o
 	$(CC) cryptick.o -shared
 
 install-configs:
-	install configs/*.json /etc/libcryptick/ -m 666
+	rm -rf configs
+	git clone https://github.com/marcoms/libcryptick-api-configs.git configs
+	install configs/*.json /etc/libcryptick/ -m 644
