@@ -11,5 +11,6 @@ shared: cryptick.o
 
 install-configs:
 	rm -rf configs
-	git clone https://github.com/marcoms/libcryptick-api-configs.git configs
+	git clone https://github.com/marcoms/libcryptick-api-configs.git configs/
+	install -d /etc/libcryptick/
 	install configs/*.json /etc/libcryptick/ -m 644
