@@ -131,7 +131,7 @@ static crtk_error crtk__url_get(
 /*
 Parses API's JSON with api_config as reference, then stores results into market
 */
-static crtk_error crtk__json_parse(
+static crtk_error crtk__api_parse(
 	crtk_market *const market
 	, const char *const json
 	, const struct crtk__api_config *const api_config

@@ -35,7 +35,7 @@ crtk_error crtk_market_get(crtk_market *const market, const char *const api, con
 	char json[65536];
 	if((lib_error = crtk__url_get(json, api_config.url)).error) return lib_error;
 
-	if((lib_error = crtk__json_parse(market, json, &api_config)).error) return lib_error;
+	if((lib_error = crtk__api_parse(market, json, &api_config)).error) return lib_error;
 
 	return lib_error;
 }
@@ -161,7 +161,7 @@ static crtk_error crtk__url_get(const char *json, const char *const url) {
 	return lib_error;
 }
 
-static crtk_error crtk__json_parse(crtk_market *const market, const char *const json, const struct crtk__api_config *const api_config) {
+static crtk_error crtk__api_parse(crtk_market *const market, const char *const json, const struct crtk__api_config *const api_config) {
 	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
 	json_error_t json_error;
 
