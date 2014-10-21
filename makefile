@@ -3,6 +3,8 @@ CC ?= gcc
 CRTK_SOURCES := cryptick.c cryptick-priv.h cryptick.h
 CFLAGS += -Wall -Wextra -std=c11 -fPIC `pkg-config libcurl --libs --cflags` `pkg-config jansson --libs --cflags`
 
+OUT := cryptick.?o
+
 cryptick: $(CRTK_SOURCES)
 	$(CC) cryptick.c -c $(CFLAGS)
 
@@ -14,3 +16,6 @@ install-configs:
 	git clone https://github.com/marcoms/libcryptick-api-configs.git configs/
 	install -d /etc/libcryptick/
 	install configs/*.json /etc/libcryptick/ -m 644
+
+clean:
+	rm -rf cryptick.{s,}o
