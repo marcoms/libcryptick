@@ -26,6 +26,8 @@
 #define CRTK__FORMAT_SPECIFIER_EXCHANGE "{e}"
 #define CRTK__FORMAT_SPECIFIER_COIN "{c}"
 
+#define CRTK__UNIT_FACTOR 1e10  // base unit == 1e8 + fractional margin
+
 crtk_error crtk_market_get(crtk_market *const market, const char *const api, const char *const exchange, const char *const coin) {
 	crtk_error lib_error;
 
@@ -335,7 +337,11 @@ static crtk_error crtk__format_array_parse(char *const dest, const json_t *const
 	char el_string[128];
 	for(uint_fast8_t i = 0, len = json_array_size(format_array); i < len; ++i) {
 		el = json_array_get(format_array, i);
-		strcpy(el_string, json_string_value(el));  // TODO check for correct type
+		if(json_is_string(el)) {
+			strcpy(el_string, json_string_value(el));
+		} else {
+			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC ": invalid type for array element");
+		}
 
 		if(!el_string[0]) {
 			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC ": invalid string for array element");

@@ -25,8 +25,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define CRTK__UNIT_FACTOR 1e10  // base unit == 1e8 + fractional margin
-
 #define CRTK__PC_ARRAY_SIZE 16
 #define CRTK__PC_ARRAY_N_ELEMENTS 8
 
