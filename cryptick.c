@@ -118,7 +118,7 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 	const char *const number_format_str = json_string_value(number_format);
 	if(!strcmp("string", number_format_str)) {
 		api_config->number_format = CRTK__NUMBER_FORMAT_STRING;
-	} else if(strcmp("real", number_format_str)) {
+	} else if(!strcmp("real", number_format_str)) {
 		api_config->number_format = CRTK__NUMBER_FORMAT_REAL;
 	} else CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
 
