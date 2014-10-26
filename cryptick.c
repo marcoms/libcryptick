@@ -82,7 +82,7 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 			|| json_is_boolean(status_success)
 		))
 	) {
-		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC ": see https://github.com/marcoms/libcryptick-api-config-spec");
 		return lib_error;
 	}
 
@@ -96,7 +96,7 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 	} else if(json_is_string(url)) {
 		strcpy(api_config->url, json_string_value(url));
 	} else {
-		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC ": invalid type for url");
 		return lib_error;
 	}
 
@@ -120,7 +120,7 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 			break;
 
 		default:
-			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC ": invalid type for status_success");
 			return lib_error;
 			break;
 	}
@@ -133,7 +133,7 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 	} else if(!strcmp("real", number_format_str)) {
 		api_config->number_format = CRTK__NUMBER_FORMAT_REAL;
 	} else {
-		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC ": invalid value for number_format");
 		return lib_error;
 	}
 
@@ -311,7 +311,7 @@ static crtk_error crtk__pc_array_parse(char (*dest)[CRTK__PC_ARRAY_SIZE], const 
 		} else if(json_is_string(el)) {
 			strcpy(dest[i], json_string_value(el));
 		} else {
-			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC ": invalid array element type");
 			return lib_error;
 		}
 	}
@@ -335,10 +335,10 @@ static crtk_error crtk__format_array_parse(char *const dest, const json_t *const
 	char el_string[128];
 	for(uint_fast8_t i = 0, len = json_array_size(format_array); i < len; ++i) {
 		el = json_array_get(format_array, i);
-		strcpy(el_string, json_string_value(el));
+		strcpy(el_string, json_string_value(el));  // TODO check for correct type
 
 		if(!el_string[0]) {
-			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC ": invalid string for array element");
 			return lib_error;
 		}
 
