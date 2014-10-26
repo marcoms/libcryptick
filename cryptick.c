@@ -40,6 +40,11 @@ crtk_error crtk_market_get(crtk_market *const market, const char *const api, con
 	return lib_error;
 }
 
+static void crtk__error_set(crtk_error *const err, const enum crtk_error_value value, const char *const desc) {
+	err->error = value;
+	strcpy(err->desc, desc);
+}
+
 static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_config, const char *const api, const char *const exchange, const char *const coin) {
 	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
 
@@ -76,7 +81,10 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 			|| json_is_integer(status_success)
 			|| json_is_boolean(status_success)
 		))
-	) CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+	) {
+		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+		return lib_error;
+	}
 
 	// name
 	strcpy(api_config->name, json_string_value(name));
@@ -87,7 +95,10 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 		crtk__format_array_parse(api_config->url, url, exchange, coin);
 	} else if(json_is_string(url)) {
 		strcpy(api_config->url, json_string_value(url));
-	} else CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+	} else {
+		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+		return lib_error;
+	}
 
 	// status_success
 
@@ -109,7 +120,8 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 			break;
 
 		default:
-			CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+			return lib_error;
 			break;
 	}
 
@@ -120,7 +132,10 @@ static crtk_error crtk__api_config_parse(struct crtk__api_config *const api_conf
 		api_config->number_format = CRTK__NUMBER_FORMAT_STRING;
 	} else if(!strcmp("real", number_format_str)) {
 		api_config->number_format = CRTK__NUMBER_FORMAT_REAL;
-	} else CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+	} else {
+		crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+		return lib_error;
+	}
 
 	// paths
 
@@ -144,10 +159,16 @@ static crtk_error crtk__url_get(const char *json, const char *const url) {
 	crtk_error lib_error = { .error = CRTK_ERROR_NONE };
 
 	CURLcode result = curl_global_init(CURL_GLOBAL_ALL);
-	if(result != CURLE_OK) CRTK__ERROR_SET_DESC_RETURN(lib_error, LIBCURL, curl_easy_strerror(result));
+	if(result != CURLE_OK) {
+		crtk__error_set(&lib_error, CRTK_ERROR_LIBCURL, curl_easy_strerror(result));
+		return lib_error;
+	}
 
 	CURL *handle = curl_easy_init();
-	if(!handle) CRTK__ERROR_SET_DESC_RETURN(lib_error, LIBCURL, "failed libcurl init");
+	if(!handle) {
+		crtk__error_set(&lib_error, CRTK_ERROR_LIBCURL, "failed libcurl init");
+		return lib_error;
+	}
 
 	curl_easy_setopt(handle, CURLOPT_URL, url);
 	curl_easy_setopt(handle, CURLOPT_WRITEFUNCTION, crtk__data_write);
@@ -155,7 +176,10 @@ static crtk_error crtk__url_get(const char *json, const char *const url) {
 
 	result = curl_easy_perform(handle);
 
-	if(result != CURLE_OK) CRTK__ERROR_SET_DESC_RETURN(lib_error, LIBCURL, curl_easy_strerror(result));
+	if(result != CURLE_OK) {
+		crtk__error_set(&lib_error, CRTK_ERROR_LIBCURL, curl_easy_strerror(result));
+		return lib_error;
+	}
 
 	curl_easy_cleanup(handle);
 	return lib_error;
@@ -166,7 +190,10 @@ static crtk_error crtk__api_parse(crtk_market *const market, const char *const j
 	json_error_t json_error;
 
 	json_t *root = json_loads(json, 0, &json_error);
-	if(!root) CRTK__ERROR_SET_DESC_RETURN(lib_error, API, json_error.text);
+	if(!root) {
+		crtk__error_set(&lib_error, CRTK_ERROR_API, json_error.text);
+		return lib_error;
+	}
 
 	json_t *status;
 	if(api_config->paths.status[0][0]) crtk__object_get(&status, root, api_config->paths.status);
@@ -175,21 +202,36 @@ static crtk_error crtk__api_parse(crtk_market *const market, const char *const j
 
 	bool api_error = false;
 	if(api_config->paths.status[0][0]) {
-		if(!status) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+		if(!status) {
+			crtk__error_set(&lib_error, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT, CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC);
+			return lib_error;
+		}
 
 		switch(api_config->status_success.type) {
 			case CRTK__STATUS_TYPE_STRING:
-				if(!json_is_string(status)) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+				if(!json_is_string(status)) {
+					crtk__error_set(&lib_error, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT, CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC);
+					return lib_error;
+				}
+
 				if(strcmp(json_string_value(status), api_config->status_success.value.string)) api_error = true;
 				break;
 
 			case CRTK__STATUS_TYPE_BOOLEAN:
-				if(!json_is_boolean(status)) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+				if(!json_is_boolean(status)) {
+					crtk__error_set(&lib_error, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT, CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC);
+					return lib_error;
+				}
+
 				if(json_is_true(status) != api_config->status_success.value.boolean) api_error = true;
 				break;
 
 			case CRTK__STATUS_TYPE_INTEGER:
-				if(!json_is_integer(status)) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+				if(!json_is_integer(status)) {
+					crtk__error_set(&lib_error, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT, CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC);
+					return lib_error;
+				}
+
 				if((int16_t) json_integer_value(status) != api_config->status_success.value.integer) api_error = true;
 				break;
 		}
@@ -201,9 +243,11 @@ static crtk_error crtk__api_parse(crtk_market *const market, const char *const j
 			lib_error = crtk__object_get(&status_desc, root, api_config->paths.status_desc);
 			if(lib_error.error == CRTK_ERROR_RESPONSE_CONFIG_CONFLICT) return lib_error;
 
-			CRTK__ERROR_SET_DESC_RETURN(lib_error, API, json_string_value(status_desc));
+			crtk__error_set(&lib_error, CRTK_ERROR_API, json_string_value(status_desc));
+			return lib_error;
 		} else {
-			CRTK__ERROR_SET_RETURN(lib_error, API);
+			crtk__error_set(&lib_error, CRTK_ERROR_API, CRTK__ERROR_API_DESC);
+			return lib_error;
 		}
 	}
 
@@ -218,11 +262,17 @@ static crtk_error crtk__api_parse(crtk_market *const market, const char *const j
 	if (
 		!(buy && sell)
 		|| (api_config->paths.status[0][0] && !status)
-	) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+	) {
+		crtk__error_set(&lib_error, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT, CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC);
+		return lib_error;
+	}
 
 	switch(api_config->number_format) {
 		case CRTK__NUMBER_FORMAT_STRING:
-			if(!(json_is_string(buy) && json_is_string(sell))) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+			if(!(json_is_string(buy) && json_is_string(sell))) {
+				crtk__error_set(&lib_error, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT, CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC);
+				return lib_error;
+			}
 
 			// store values
 
@@ -233,7 +283,10 @@ static crtk_error crtk__api_parse(crtk_market *const market, const char *const j
 			break;
 
 		case CRTK__NUMBER_FORMAT_REAL:
-			if(!(json_is_real(buy) && json_is_real(sell))) CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+			if(!(json_is_real(buy) && json_is_real(sell))) {
+				crtk__error_set(&lib_error, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT, CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC);
+				return lib_error;
+			}
 
 			market->buy = json_real_value(buy);
 			market->sell = json_real_value(sell);
@@ -258,7 +311,8 @@ static crtk_error crtk__pc_array_parse(char (*dest)[CRTK__PC_ARRAY_SIZE], const 
 		} else if(json_is_string(el)) {
 			strcpy(dest[i], json_string_value(el));
 		} else {
-			CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+			return lib_error;
 		}
 	}
 
@@ -284,7 +338,8 @@ static crtk_error crtk__format_array_parse(char *const dest, const json_t *const
 		strcpy(el_string, json_string_value(el));
 
 		if(!el_string[0]) {
-			CRTK__ERROR_SET_RETURN(lib_error, API_CONFIG_INVALID);
+			crtk__error_set(&lib_error, CRTK_ERROR_API_CONFIG_INVALID, CRTK__ERROR_API_CONFIG_INVALID_DESC);
+			return lib_error;
 		}
 
 		crtk__format_replace(el_string, exchange, coin);
@@ -310,7 +365,8 @@ static crtk_error crtk__object_get(json_t **dest, const json_t *const root, cons
 		child = json_object_get(child, pc_array[i]);
 		if(!child) {
 			*dest = NULL;
-			CRTK__ERROR_SET_RETURN(lib_error, RESPONSE_CONFIG_CONFLICT);
+			crtk__error_set(&lib_error, CRTK_ERROR_RESPONSE_CONFIG_CONFLICT, CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC);
+			return lib_error;
 		}
 	}
 

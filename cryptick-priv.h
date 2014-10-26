@@ -23,6 +23,7 @@
 #define CRYPTICK_PRIV_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define CRTK__UNIT_FACTOR 1e10  // base unit == 1e8 + fractional margin
 
@@ -32,26 +33,6 @@
 #define CRTK__ERROR_API_CONFIG_INVALID_DESC "invalid API configuration file"
 #define CRTK__ERROR_RESPONSE_CONFIG_CONFLICT_DESC "API configuration does not match response"
 #define CRTK__ERROR_API_DESC "API call returned unsuccessful"
-
-#define CRTK__ERROR_SET(var, value) do { \
-	var.error = CRTK_ERROR_##value; \
-	strcpy(var.desc, CRTK__ERROR_##value##_DESC); \
-} while(0);
-
-#define CRTK__ERROR_SET_RETURN(var, value) do { \
-	CRTK__ERROR_SET(var, value); \
-	return var; \
-} while(0);
-
-#define CRTK__ERROR_SET_DESC(var, value, custom_desc) do { \
-	var.error = CRTK_ERROR_##value; \
-	strcpy(var.desc, custom_desc); \
-} while(0);
-
-#define CRTK__ERROR_SET_DESC_RETURN(var, value, custom_desc) do { \
-	CRTK__ERROR_SET_DESC(var, value, custom_desc); \
-	return var; \
-} while(0);
 
 /*
 What type a successful status response is
@@ -109,6 +90,12 @@ struct crtk__api_config {
 };
 
 #include "cryptick.h"
+
+static void crtk__error_set(
+	crtk_error *const var
+	, const enum crtk_error_value value
+	, const char *const desc
+);
 
 /*
 Finds a corresponding API configuration file and parses it into api_config
