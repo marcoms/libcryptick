@@ -89,6 +89,9 @@ struct crtk__api_config {
 
 #include "cryptick.h"
 
+/*
+Sets a crtk_error's error and description
+*/
 static void crtk__error_set(
 	crtk_error *const var
 	, const enum crtk_error_value value
